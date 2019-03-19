@@ -15,8 +15,12 @@ var express =  require('express');
 // Variable para cargar el módulo de Mongoose, nos va a servir para conectarnos a MongoDB para trabajar con la BDD dentro de nuestra API REST
 var mongoose = require('mongoose');
 
-// Cargamos la dependencia "colors" parap oder manejar color de texto en la consola
+// Cargamos la dependencia "colors" para poder manejar color de texto en la consola
 var colors = require('colors');
+
+// Cargamos el módulo "body-parser" que sirve para convertir los JSON (de las peticiones API)
+// que nos llegan a un objeto JavaScript usables y funcionales
+var bodyParser = require('body-parser');
 
 
 
@@ -26,19 +30,43 @@ var app = express();
 
 
 // ++++ CARGAR RUTAS ++++
-// "app."   = Hacemos la referencia al EXPRESS
-// "get"    = Tipo de petición que vamos a estar escuchando, en este caso es un GET
-// "'/'"    = Es el PATH, en este caso es la raíz
-// "(req, res, next ) =>" = Es una funcion de callback que recibe 3 parámetros: error(req), respuesta(res) y next(le dice a EXPRESS que cuando
-//            se ejecute esta función cotinue con la sig. instrucción, aunque por lo regular este parámetro se usa en los MIDDLEWARE)
-app.get('/', (req, res, next ) => {
-    // Indicamos que la operación se realizó correctamente
-    // ".json" = Covertimos la respuesta a un objeto JSON
-    res.status(200).json({
-        ok: true,   // La petición se realizó correctamente
-        mensaje: 'Petición realizada Correstamente'  // Mensaje que queremos mostrar
-    });
-});
+// Cargamos el módulo de configuración de rutas que creamos en la carpeta de "rutas" en el archivo "app.js"
+// Esta es la ruta principal
+var rutaPrincipal = require('./Rutas/app');
+//Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "usuario.js"
+var usuario_Rutas = require('./Rutas/usuario');
+//Cargamos el módulo de configuración de login que creamos en la carpeta de "Rutas" en el archivo "login.js"
+var login_Rutas = require('./Rutas/login');
+
+
+
+//-- MIDDLEWARE DE BODY-PARSER 
+// ¡¡¡ NOTA.- Este apartado del BODY-PARSER debe ir antes del apartado de "RUTAS BASE" de lo contrario no funcionará !!!
+// Son funciones, métodos que se ejecutan en primer lugar cuando se ejecutan peticiones HTTP, antes de que llegue a un controlador) --
+// Si hay algo en el BODY que nosotros estémos enviando el BODY-PARSER lo va a tomar y nos va a crear el objeto de JavaScript para que
+// lo podamos utilizar en cualquier lugar
+app.use(bodyParser.urlencoded({extended:false}))    //Creamos el middleware
+app.use(bodyParser.json());                         //Lo que traiga el body lo convertimos a JSON para poder usarlo dentro de nuestro código
+
+
+
+// -- RUTAS BASE
+// Aquí cargamos la configuración de rutas) --
+/*  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+// "app.use"         = Nos permite hacer middleware, es decir, en cada petción que se haga el middleware siempre se va a ejecutar antes de llegar a la acción del controlador
+//                   El middleware es algo que se ejecuta antes de que se resuelvan otras rutas
+
+// "Usuario_Rutas" =  Ruta para los "Usuarios"
+app.use('/usuario',usuario_Rutas);
+// "Usuario_Rutas" =  Ruta para el "Login"
+app.use('/login',login_Rutas);
+
+// Esta debe de ir al final, si la ponemos antes de otras rutas entonces siempre se estará llamando a esta ruta y no entrarán las que estén debajo de ella
+// "/"              = Es la ruta principal
+// "rutaPrincipal"  = Ruta Principal, se activa cuando cualquier petición haga match con la pleca (/)
+app.use('/',rutaPrincipal);
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
 
 
 
@@ -55,7 +83,7 @@ app.listen(3000, ()=>{
 // "localhost:27017"        = Es el puerto por default de MongoDB, eso lo configuramos en Robo 3T, y su valor lo vemos al ejecutar el MONGOD
 // "hospitalDB"             = Es nuestra Base de Datos, la creamos en Robo 3T, si la BDD o existe entonces se crea
 // "{useNewUrlParser:true}" = Es una nueva versión del analizador de cadenas, aún no es obligatorio pero ya lo podemos usar y nos evitamos un mensaje de advertencia
-//                            que aparece en la ventana del CMD cuando hace la conexión a la BDD         
+//                            que aparece en la ventana del CMD cuando hace la conexión a la BDD
 // "( err, res )"           = Función de callback que recibe 2 parámetros, un error(err) o una respuesta(res)
 mongoose.connection.openUri('mongodb://localhost:27017/hospitalDB',{useNewUrlParser:true}, ( err, res )=>{
     // Sucedió un error, aquí se detiene todo el proceso
@@ -63,5 +91,5 @@ mongoose.connection.openUri('mongodb://localhost:27017/hospitalDB',{useNewUrlPar
 
     // Todo OK, Node logró la conexión con la BDD de MONGO
     console.log('Base de Datos:', 'online'.magenta);
-})   
+});
 
