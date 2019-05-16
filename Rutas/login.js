@@ -1,9 +1,10 @@
-// FICHERO DE CONFIGURACIÓN DE RUTAS DE "USUARIOS"
+// FICHERO PARA COMPROBAR QUE UN USUARIO EXISTE
 
 // Significa que puede usar las nuevas instrucciones de los nuevos estandares de JavaScript
 'use strict'
 
-// ++++ REQUIRES = Es una importación de librerías ya sea de terceros o personalizadas que ocupamos para que funcione algo ++++
+// ++++ REQUIRES ++++
+// Es una importación de librerías ya sea de terceros o personalizadas que ocupamos para que funcione algo ++++
 // Recordar que todo lo que teclamos es KEY SENSITIVE, es decir, se diferencian minúsculas de mayúsculas
 // Cargamos el módulo "express", nos va a permitir trabajar con las rutas, protocolo HTTP, etc.
 var express =  require('express');
@@ -21,19 +22,18 @@ var bcrypt = require('bcrypt');
 //       utilizando JWS (JSON Web Signature)
 var jwt = require('jsonwebtoken');
 
-
-
-
-// ++++ INICIALIZACIÓN DE VARIBLES ++++
-// Invocamos a la función "express", carga el framework de "express" directamente, estamos definiendo el Servidor EXPRESS
-var app = express();
-
 // Importamos el Esquema de Usuario que definimos en "Modelos/Usuario.js" para poder usar todas las fuciones y métodos que tiene dicho Modelo
 var Usuario = require('../Modelos/usuario');
 
 // Importamos el archivo "config.js" para poder usar la constante SEED
 // ".SEED" = Aquí mismo le damos el valor de la constante a la variable que estamos declarando
 var SEED = require('../config/config').SEED;
+
+
+
+// ++++ INICIALIZACIÓN DE VARIBLES ++++
+// Invocamos a la función "express", carga el framework de "express" directamente, estamos definiendo el Servidor EXPRESS
+var app = express();
 
 
 
@@ -47,7 +47,7 @@ var SEED = require('../config/config').SEED;
 //            se ejecute esta función cotinue con la sig. instrucción, aunque por lo regular este parámetro se usa en los MIDDLEWARE)
 // Aquí recibimos la información que se envía mediante un HTTP POST o un POST
 app.post('/',  ( pet, res, next ) =>
-{  
+{
     //Si nos llegan datos por POST o GET utilizamos "body"
     //Si nos llegan los datos por la URL utilizamos "params"
 
@@ -61,67 +61,66 @@ app.post('/',  ( pet, res, next ) =>
     var password = params.password;
 
 
-    //Verificamos que el email del usuario nuevo SI exista en la BDD 
-    //Buscamos en la colección de Usuarios(Usuario) un solo documento(findOne) cuyo email(email) sea igual al email que llega por post(email)
+    //Verificamos que el email del usuario nuevo SI exista en la BDD
+    //Buscamos en la colección de Usuarios(Usuario) un solo documento(findOne) cuyo email(email) sea igual al email que llega por POST(email)
     //se tiene una función de callback que recibe como parámetro un error(err) o un usuario que existe(usuario)
     Usuario.findOne({email: email},(err,usuario) =>
     {
-        //En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
+        // En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
         if(err)
         {
             return res.status(500).json({
-            ok: false,   
+            ok: false,
             mensaje: 'Error al comprobar la existencia del Usuario',
-            errores: err 
-            });    
+            errores: err
+            });
         }
 
-        //No se localiza al Usuario con el id Especificado
+        // No se localiza al Usuario con el id Especificado
         if(!usuario)
         {
             return res.status(400).json({
-            ok: false,   
+            ok: false,
             mensaje: 'Credenciales incorrectas - email',
             errores:err
-            });    
+            });
         }
 
-        // El email es válido, ahora hay que verificar que le password también sea correcto
-        // Se pasa el password que se está recibiendo por POST(password) y el password que está en BDD(usuario.password) y se comparan        
+        // El email es válido, ahora hay que verificar que el password también sea correcto
+        // Se pasa el password que se está recibiendo por POST(password) y el password que está en BDD(usuario.password) y se comparan
         // y retorna TRUE en caso de ser positiva la comparativa y FALSE en caso contrario
+        // "bcrypt.compareSync" = Función que permite tomar el string que se desea verificar(password) contra otro string que ya ha sido pasado por el hash(usuario.password)
         if(!bcrypt.compareSync(password,usuario.password))
         {
             // El password NO es válido
             return res.status(400).json({
-                ok: false,   
+                ok: false,
                 mensaje: 'Credenciales incorrectas - password',
                 errores:err
             });
         }
 
-        //Por cuestiones de seguridad NO devolvemos el Password
+        // Todo OK
+        // Por cuestiones de seguridad NO devolvemos el Password
         usuario.password = undefined;
 
         // Crear el Token
-        // ".sign" = Es como firmar
+        // ".sign"                              = Es como firmar, estamos creando la firma
         // "{usuario:usuario}"                  = PAYLOAD, Es el primer parámetro, es la data que se quiere colocar en el token
+        //                                        es decir, que el token se va a generar en base a todos los campos del Usuario, excepto el password
         // "'@es mi semilla de autenticacion'"  = SEED,El segundo parámetro es lo que nos ayuda a crear un token único a pesar de que usamos una librería que no hicimos nosotros, se le conoce como SEED o semilla
-        // "{ expiresIn: 14400}"                = Fecha de expiración del Token, en este caso son 4 horas
-        var token = jwt.sign({ usuario:usuario}, SEED ,{ expiresIn: 14400});
-        
+        // "{ expiresIn: 14400}"                = Fecha de expiración del Token, en este caso son 4 horas: 14400/60 = 240/60
+        var token = jwt.sign({ usuario:usuario }, SEED ,{ expiresIn: 14400 });
+
         res.status(200).json({
-            ok: true,                                    
+            ok: true,
             usuario: usuario,
             token: token,
             id: usuario._id
-        });                
-            
+        });
+
     });
 
-
-
-    
-    
 });
 
 

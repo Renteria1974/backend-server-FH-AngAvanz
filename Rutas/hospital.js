@@ -1,4 +1,4 @@
-// FICHERO DE CONFIGURACIÓN DE RUTAS DE "USUARIOS"
+// FICHERO DE CONFIGURACIÓN DE RUTAS DE "HOSPITALES"
 
 // Significa que puede usar las nuevas instrucciones de los nuevos estandares de JavaScript
 'use strict'
@@ -9,11 +9,8 @@
 // Cargamos el módulo "express", nos va a permitir trabajar con las rutas, protocolo HTTP, etc.
 var express =  require('express');
 
-// Cargamos el módulo "bcrypt", esto nos permite hacer un cifrado de passwords
-var bcrypt = require('bcrypt');
-
-// Importamos el Esquema de Usuario que definimos en "Modelos/Usuario.js" para poder usar todas las fuciones y métodos que tiene dicho Modelo
-var Usuario = require('../Modelos/usuario');
+// Importamos el Esquema de Hospital que definimos en "Modelos/hospital.js" para poder usar todas las fuciones y métodos que tiene dicho Modelo
+var Hospital = require('../Modelos/hospital');
 
 // SERVICIO JWT
 // Importar el módulo de JWT, las librerías JWT, para poder acceder a sus métodos
@@ -37,7 +34,7 @@ var app = express();
 
 
 // =====================================
-// ++++ OBTENER TODOS LOS USUARIOS ++++
+// ++++ OBTENER TODOS LOS HOSPITALES ++++
 // =====================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "get"    = Tipo de petición que vamos a estar escuchando, en este caso es un GET
@@ -53,18 +50,17 @@ app.get('/', ( pet, res, next ) =>
 
 
     // ---- Hacemos uso de Mongoose ----
-    // "Usuario.find({}"    = Esta es la consulta, dentro de las llaves podemos poner el query para búsqueda, lo dejamos en blanco porque en este 
-    //                      caso deseamos el listado deseamos el listado de todos los clientes
-    // "'-password'"        = Indicamos que no deseamos que se muestre el Password    
-    // ".skip(n)"           = El resultado de la búsqueda se muestra a partir del elemento "n"
-    // "limit(n)"           = Se muestran en la página como máximo "n" elementos
-    // ".exec("             = Executamos la consulta
-    // "(err, usuarios)=>"  = Es el resultado de la búsqueda, es un callback que recibe 2 parámetros: un posible error(err) o la colección de usuarios(usuarios)
-    Usuario.find({}, '-password')
+    // "Hospital.find({}"       = Esta es la consulta, dentro de las llaves podemos poner el query para búsqueda, lo dejamos en blanco porque en este 
+    //                          caso deseamos el listado deseamos el listado de todos los medicos
+    // "(err, hospitales)=>"    = Es el resultado de la búsqueda, es un callback que recibe 2 parámetros: un posible error(err) o la colección de hospitales(hospitales)
+    // ".populate('usuario', nombre email)"   = Para que devuelva el ID, nombre y email del Usuario que hizo el LOGUIN en lugar de solo su ID
+    // ".exec("                 = Executamos la consulta
+    Hospital.find({})
         .skip(desde)
         .limit(5)
+        .populate('usuario', 'nombre email')
         .exec(
-            (err, usuarios)=>
+            (err, hospitales)=>
             {
             // Ocurrió un error
             if ( err )
@@ -72,32 +68,32 @@ app.get('/', ( pet, res, next ) =>
                 // ".json" = Covertimos la respuesta a un objeto JSON
                 return res.status(500).json({
                     ok: false,      // La petición NO se realizó
-                    mensaje: 'Error al cargar los Usuarios',  // Mensaje que queremos mostrar
+                    mensaje: 'Error al cargar los Hospitales',  // Mensaje que queremos mostrar
                     errors: err     // Descripción del error
                 });
             }
 
             // Todo OK
             // Obtenemos el total de registros obtenidos en la consulta
-            // "Medico.countDocuments" = Método de Mongoose para obtener el total de socumentos de una colección, en ese caso de la colección "usuarios"
+            // "Medico.countDocuments" = Método de Mongoose para obtener el total de socumentos de una colección, en ese caso de la colección "hospitales"
             // "{}"             = Query, filtro del a búsqueda, en este caso queremos todos yl o dejams en blanco
             // "(err, conteo)"  = Podemos recibir un posible error(err) o bien el total de registros obtenidos(conteo)
-            Usuario.countDocuments({}, (err, conteo)=>
+            Hospital.countDocuments({}, (err, conteo)=>
             {
                 // ".json" = Covertimos la respuesta a un objeto JSON
                 return res.status(200).json({
-                    ok: true,           // La petición se realizó correctamente
-                    usuarios: usuarios, // Regresamos un arreglo con la colección de Objetos de usuarios
-                    total:  conteo      // Total de registros que obtiene la consulta
+                    ok: true,               // La petición se realizó correctamente
+                    hospitales: hospitales, // Regresamos un arreglo con la colección de Objetos de hospitales
+                    total: conteo           // Total de resitros obtenidos en la consulta
                 });
-            })            
-            
+            })    
         })
 });
 
 
+
 // ===========================================
-// ++++ AGREGAR UN NUEVO USUARIO A LA BDD ++++
+// ++++ AGREGAR UN NUEVO HOSPITAL A LA BDD ++++
 // ===========================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "post"   = Tipo de petición que vamos a estar escuchando, en este caso es un POST
@@ -115,50 +111,41 @@ app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
 
     // Creamos una instancia (Objeto) de Usuario
     // Le envíamos los parámetros respectivos obtenidos del POST
-    var usuario = new Usuario({
+    var hospital = new Hospital({
         nombre:     params.nombre,
-        apellido:   params.apellido,
-        email:      params.email,
-        
-        // "bcrypt.hashSync" = Hacemos una encriptaci+on de una sola vía en el campo seleccionado
-        // "10" = Es el número de rounds
-        password:   bcrypt.hashSync(params.password,10),
-
-        image:      params.image,
-        role:       params.role
-    });
+        usuario:    pet.usuario._id        
+    });    
     
-    //Guardamos los valores del Nuevo Usuario en la BDD
-    // ".save"                      = Método de mongoose
-    // "( err, usuarioGuardado )=>" = Se recibe un callback, es decir, una función que regresa cuandose graba el usuario en BDD
-    // "err"                        = Posible Error
-    // "usuarioGuardado"            = usuarioGuardado, es todo el objeto con todos los datos del nuevo usuario que ya se guardó en BDD
-    usuario.save( ( err, usuarioGuardado )=>
+    //Guardamos los valores del Nuevo Hospital en la BDD
+    // ".save"                          = Método de mongoose
+    // "( err, hospitalGuardado )=>"    = Se recibe un callback, es decir, una función que regresa cuandose graba el hospital en BDD
+    // "err"                            = Posible Error
+    // "hospitalGuardado"               = hospitalGuardado, es todo el objeto con todos los datos del nuevo hospital que ya se guardó en BDD
+    hospital.save( ( err, hospitalGuardado )=>
     {
        //En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
        if(err)
        {
             return res.status(400).json({
-            ok: false,
-            mensaje: 'Error al Intentar Guardar al Nuevo Usuario',
-            errores: err 
+                ok: false,
+                mensaje: 'Error al Intentar Guardar al Nuevo Hospital',
+                errores: err 
             });
         }
 
         // Todo OK
         res.status(201).json({
-        ok: true,                   // La petición se realizó correctamente
-        usuario: usuarioGuardado,   // Regresamos el objeto del usuario que se acaba de guardar en BDD
-        usuarioToken: pet.usuario   // Obtenemos la información del Usuario que hizo la petición del Servicio, esto valor se genera en la funcion
-                                    // "verificaToken" del archivo "autenticacion.js"
+            ok: true,                   // La petición se realizó correctamente
+            hospital: hospitalGuardado  // Regresamos el objeto del hospital que se acaba de guardar en BDD        
         });
     });
 
 });
 
 
+
 // ===================================================
-// ++++ ACTUALIZAR EN BDD LOS DATOS DE UN USUARIO ++++
+// ++++ ACTUALIZAR EN BDD LOS DATOS DE UN HOSPITAL ++++
 // ===================================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "put"    = Tipo de petición que vamos a estar escuchando, en este caso es un PUT
@@ -172,74 +159,70 @@ app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
     //Si nos llegan los datos por la URL utilizamos "params"
 
     //Recogemos el valor "id" del parámetro que nos llega por la URL
-    var IdUsuario   = pet.params.id;
+    var IdHospital   = pet.params.id;
 
     //Recogemos los datos que tenemos en el body (los valores nuevos) para modificar el usuario
     var NuevosDatos = pet.body;
 
-    // "Usuario"            = Hacemos uso del Esquema de usuario definido en el archivo "usuario.js" dentro de la crpeta "Modelos"
+    // "Hospital"           = Hacemos uso del Esquema de hospital definido en el archivo "hospital.js" dentro de la carpeta "Modelos"
     // ".findById"          = Instrucción de Mongoose, buscamos un documento por su Id
-    // "(err,usuario)=>"    = Función de callback con 2 parámetros de retorno: un posible error(err) o la respuesta, que en este caso es el objeto de un usuario(usuario) obtenido de la consulta a la BDD
-    Usuario.findById(IdUsuario,(err,usuario) =>
+    // "(err,hospital)=>"   = Función de callback con 2 parámetros de retorno: un posible error(err) o la respuesta, que en este caso es el objeto de un hospital(hospital) obtenido de la consulta a la BDD
+    Hospital.findById(IdHospital,(err,hospital) =>
     {
         // Tenemos un error
         if( err )
         {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al buscar al Usuario',
+                mensaje: 'Error al buscar al Hospital',
                 errores: err
             });
         }
-        // El usuario no nos llega, el objeto está vacío
-        if( !usuario )
+        // El hospital no nos llega, el objeto está vacío
+        if( !hospital )
         {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El Usuario con el id ' + IdUsuario + ' no existe',
-                errores: { message: 'No existe un Usuario con ese Id'}
+                mensaje: 'El Hospital con el id ' + IdHospital + ' no existe',
+                errores: { message: 'No existe un Hospital con ese Id'}
             });
         }
 
-        // Todo OK, Se localizó el registro del Usuario, estamos listos para actualizar la DATA del Usuario
-        // Modificamos los datos del Usuario de acuerdo a los nuevos valores que nos llegan por el BODY
-        usuario.nombre      = NuevosDatos.nombre;
-        usuario.apellido    = NuevosDatos.apellido;
-        usuario.email       = NuevosDatos.email;
-        usuario.role        = NuevosDatos.role;
+        // Todo OK, Se localizó el registro del Hospital, estamos listos para actualizar la DATA del Hospital
+        // Modificamos los datos del Hospital de acuerdo a los nuevos valores que nos llegan por el BODY
+        hospital.nombre     = NuevosDatos.nombre;        
+        hospital.usuario    = pet.usuario._id;
 
-        // Guardamos el Registro del Usuario con los nuevos valores
-        // ".save"           = Método de mongoose
-        // "( err, usuarioGuardado )=>" = Se recibe un callback, es decir, una función que regresa cuandose graba el usuario en BDD
-        // "err"             = Posible Error
-        // "usuarioGuardado" = Usuario Guardado, es todo el objeto con todos los datos del nuevo usuario que ya se guardó en BDD
-        usuario.save(( err, usuarioGuardado )=>
+        // Guardamos el Registro del Hospital con los nuevos valores
+        // ".save"              = Método de mongoose
+        // "( err, hospitalGuardado )=>" = Se recibe un callback, es decir, una función que regresa cuandose graba el hospital en BDD
+        // "err"                = Posible Error
+        // "hospitalGuardado"   = Hospital Guardado, es todo el objeto con todos los datos del nuevo hospital que ya se guardó en BDD
+        hospital.save(( err, hospitalGuardado )=>
         {
             // En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
             if(err)
             {
                 return res.status(400).json({
-                ok: false,
-                mensaje: 'Error al Intentar Actualizar los datos del Usuario',
-                errores: err
+                    ok: false,
+                    mensaje: 'Error al Intentar Actualizar los datos del Hospital',
+                    errores: err
                 });
             }
-
-            // Por cuestiones de seguridad no mostramos el Password
-            usuarioGuardado.password = undefined;
-
+            
             // Todo OK
             res.status(200).json({
                 ok: true,                   // La petición se realizó correctamente
-                usuario: usuarioGuardado    // Regresamos el objeto del usuario que se acaba de guardar en BDD
+                hospital: hospitalGuardado  // Regresamos el objeto del hospital que se acaba de guardar en BDD
             });
         });
     });
 });
 
 
+
 // ======================================================
-// ++++ ELIMINAR DE LA BDD EL REGISTRO DE UN USUARIO ++++
+// ++++ ELIMINAR DE LA BDD EL REGISTRO DE UN HOSPITAL ++++
 // ======================================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "delete" = Tipo de petición que vamos a estar escuchando, en este caso es un DELETE
@@ -253,20 +236,20 @@ app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
     //Si nos llegan los datos por la URL utilizamos "params"
 
     //Recogemos el valor "id" del parámetro que nos llega por la URL
-    var IdUsuario = pet.params.id;
+    var IdHospital = pet.params.id;
 
     // Hacemos referencia a nuestro Modelo de Usuario
     //".findByIdAndDelete"  = Buscamos un documento por su Id y lo eliminamos
-    //(err,usuarioBorrado)  = Función de callback con 2 parámetros de retorno: un posible error(err) o el objeto de un Usuario(usuarioBorrado) obtenido de la consulta a la BDD
-    Usuario.findByIdAndDelete(IdUsuario, ( err,usuarioBorrado )=>
+    //(err,hospitalBorrado) = Función de callback con 2 parámetros de retorno: un posible error(err) o el objeto de un Hospital(hospitalBorrado) obtenido de la consulta a la BDD
+    Hospital.findByIdAndDelete(IdHospital, ( err,hospitalBorrado )=>
     {
-        // No se localiza al Usuario con el id Especificado
-        if(!usuarioBorrado)
+        // No se localiza al Hospital con el id Especificado
+        if(!hospitalBorrado)
         {
             return res.status(400).json({
-            ok: false,   
-            mensaje: 'No existe un Usuario con el ID especificado',
-            errores: { message: 'No existe un Usuario con el ID especificado' }
+                ok: false,   
+                mensaje: 'No existe un Hospital con el ID especificado',
+                errores: { message: 'No existe un Hospital con el ID especificado' }
             });
         }
 
@@ -274,22 +257,19 @@ app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
          if(err)
          {
              return res.status(500).json({
-             ok: false,
-             mensaje: 'Error al Intentar Eliminar los datos del Usuario',
-             errores: err
+                ok: false,
+                mensaje: 'Error al Intentar Eliminar los datos del Hospital',
+                errores: err
              });
          }
 
          // Todo OK
          res.status(200).json({
             ok: true,                  // La petición se realizó correctamente
-            usuario: usuarioBorrado    // Regresamos el objeto del usuario que se acaba de Eliminar de la BDD
+            hospital: hospitalBorrado  // Regresamos el objeto del hospital que se acaba de Eliminar de la BDD
          });
     });
 });
-
-
-
 
 
 // Exportamos el módulo

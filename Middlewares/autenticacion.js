@@ -3,8 +3,8 @@
 
 
 
-
-// ++++ REQUIRES = Es una importación de librerías ya sea de terceros o personalizadas que ocupamos para que funcione algo ++++
+// ++++ REQUIRES ++++
+// Es una importación de librerías ya sea de terceros o personalizadas que ocupamos para que funcione algo ++++
 // Recordar que todo lo que teclamos es KEY SENSITIVE, es decir, se diferencian minúsculas de mayúsculas
 // SERVICIO JWT
 // Importar el módulo de JWT, las librerías JWT, para poder acceder a sus métodos
@@ -26,7 +26,7 @@ var SEED = require('../config/config').SEED;
 // ++++ VERIFICAR TOKEN (MIDDLEWARE)  ++++
 // =======================================
 //"exports.verificaToken"   = Se exporta directamente un método llamado "verificaToken"
-//"function(pet,res,next)"  = Función anónima que va a recibir 3 parámetros: pet(petición),res(respuesta), 
+//"function(pet,res,next)"  = Función anónima que va a recibir 3 parámetros: pet(petición),res(respuesta),
 //                            next(pasar al siguiente paso de la petición http que generalmente es el método de la ruta que estamos llamando)
 exports.verificaToken = function(pet,res,next)
 {
@@ -37,30 +37,30 @@ exports.verificaToken = function(pet,res,next)
     var token = pet.query.token;
 
     // Verificamos que el token sea correcto
-    // "token"  = Primer parámetro, es el valor del token que estamos recibiendo de la petición, sep ueden recibir por los HEADERS pero nosotros lo vamos a hacer a travez del URL
-    // "SEED"   = Segundo parámetro, es la semilla, la ocnstante que generamos en el archivo "login.js"
+    // ".verify"= Función para verificar la validez del token
+    // "token"  = Primer parámetro, es el valor del token que estamos recibiendo de la petición, se pueden recibir por los HEADERS pero nosotros lo vamos a hacer a travez del URL
+    // "SEED"   = Segundo parámetro, es la semilla, la constante que generamos en el archivo "login.js"
     // "(err,decoded)"   = Tercer parámetro, es un callback, que retorna o bien un error(err) o bien la información del Usuario que hizo Login(decoded) porque eso es lo que colocamos en el PAYLOAD
-    jwt.verify( token, SEED,( err, decoded)=>{
-        // En caso de haber un error        
+    jwt.verify( token, SEED,( err, decoded )=>
+    {
+        // En caso de haber un error
         if ( err )
         {
             // ".json" = Convertimos la respuesta a un objeto JSON
             return res.status(401).json({
-                ok: false,   // La petición NO se realizó
-                mensaje: 'Token Incorrecto',  // Mensaje que queremos mostrar
-                errors: err     // Descripción del error
+                ok: false,                      // La petición NO se realizó
+                mensaje: 'Token Incorrecto',    // Mensaje que queremos mostrar
+                errors: err                     // Descripción del error
             });
         }
 
         // Que la información del Usuario que hizo la Petición esté disponible en cualquier petición en donde se use la función de "verificaToken"
-        // "pet.usuario"        = En la Petición se coloca al Usuario
+        // "pet.usuario"        = En la Petición colocamos al Usuario que tenemos en el Token (el que hizo Loguin)
         // "decoded.usuario"    = Se extrae al Usuario del "decoded"
         pet.usuario = decoded.usuario;
 
         // Pasamos al siguiente método de la ruta, es para que el middleware no entre en bucle infinito, que salga de aquí
         // es decir, los métodos que están abajo (crear usuario, modificar usuario, eliminar usuario) ya no se quedan "congelados"
         next();
-
-        
-    }); 
+    });
 }

@@ -1,4 +1,4 @@
-// FICHERO DE CONFIGURACIÓN DE RUTAS DE "USUARIOS"
+// FICHERO DE CONFIGURACIÓN DE RUTAS DE "MEDICOS"
 
 // Significa que puede usar las nuevas instrucciones de los nuevos estandares de JavaScript
 'use strict'
@@ -9,11 +9,8 @@
 // Cargamos el módulo "express", nos va a permitir trabajar con las rutas, protocolo HTTP, etc.
 var express =  require('express');
 
-// Cargamos el módulo "bcrypt", esto nos permite hacer un cifrado de passwords
-var bcrypt = require('bcrypt');
-
-// Importamos el Esquema de Usuario que definimos en "Modelos/Usuario.js" para poder usar todas las fuciones y métodos que tiene dicho Modelo
-var Usuario = require('../Modelos/usuario');
+// Importamos el Esquema de Medico que definimos en "Modelos/medico.js" para poder usar todas las fuciones y métodos que tiene dicho Modelo
+var Medico = require('../Modelos/medico');
 
 // SERVICIO JWT
 // Importar el módulo de JWT, las librerías JWT, para poder acceder a sus métodos
@@ -37,7 +34,7 @@ var app = express();
 
 
 // =====================================
-// ++++ OBTENER TODOS LOS USUARIOS ++++
+// ++++ OBTENER TODOS LOS MEDICOS ++++
 // =====================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "get"    = Tipo de petición que vamos a estar escuchando, en este caso es un GET
@@ -46,25 +43,26 @@ var app = express();
 //            se ejecute esta función cotinue con la sig. instrucción, aunque por lo regular este parámetro se usa en los MIDDLEWARE)
 app.get('/', ( pet, res, next ) =>
 {
-    // Si en el query de la petición no viene especificado desde que registro queremos el listado (porque es un parámetro opcional) entonces ponemos "0" para
+    
+     // Si en el query de la petición no viene especificado desde que registro queremos el listado (porque es un parámetro opcional) entonces ponemos "0" para
     // que en ese caso nos comience a mostrar en pantalla a partir del primer registro
     var desde = pet.query.desde || 0;
     desde = Number(desde);  //Nos aseguramos de que sea un valor numérico
 
 
     // ---- Hacemos uso de Mongoose ----
-    // "Usuario.find({}"    = Esta es la consulta, dentro de las llaves podemos poner el query para búsqueda, lo dejamos en blanco porque en este 
-    //                      caso deseamos el listado deseamos el listado de todos los clientes
-    // "'-password'"        = Indicamos que no deseamos que se muestre el Password    
-    // ".skip(n)"           = El resultado de la búsqueda se muestra a partir del elemento "n"
-    // "limit(n)"           = Se muestran en la página como máximo "n" elementos
+    // "Medico.find({}"     = Esta es la consulta, dentro de las llaves podemos poner el query para búsqueda, lo dejamos en blanco porque en este
+    //                          caso deseamos el listado deseamos el listado de todos los medicos
+    // "(err, medicos)=>"   = Es el resultado de la búsqueda, es un callback que recibe 2 parámetros: un posible error(err) o la colección de medicos(medicos)    
+    // ".populate('usuario', nombre email)"   = Para que devuelva el ID, nombre y email del Usuario que hizo el LOGUIN en lugar de solo su ID
     // ".exec("             = Executamos la consulta
-    // "(err, usuarios)=>"  = Es el resultado de la búsqueda, es un callback que recibe 2 parámetros: un posible error(err) o la colección de usuarios(usuarios)
-    Usuario.find({}, '-password')
+    Medico.find({})
         .skip(desde)
         .limit(5)
+        .populate('usuario', 'nombre email')
+        .populate('hospital')
         .exec(
-            (err, usuarios)=>
+            (err, medicos)=>
             {
             // Ocurrió un error
             if ( err )
@@ -72,32 +70,32 @@ app.get('/', ( pet, res, next ) =>
                 // ".json" = Covertimos la respuesta a un objeto JSON
                 return res.status(500).json({
                     ok: false,      // La petición NO se realizó
-                    mensaje: 'Error al cargar los Usuarios',  // Mensaje que queremos mostrar
+                    mensaje: 'Error al cargar los Médicos',  // Mensaje que queremos mostrar
                     errors: err     // Descripción del error
                 });
             }
 
             // Todo OK
             // Obtenemos el total de registros obtenidos en la consulta
-            // "Medico.countDocuments" = Método de Mongoose para obtener el total de socumentos de una colección, en ese caso de la colección "usuarios"
-            // "{}"             = Query, filtro del a búsqueda, en este caso queremos todos yl o dejams en blanco
+            // "Medico.countDocuments" = Método de Mongoose para obtener el total de socumentos de una colección, en ese caso de la colección "medicos"
+            // "{}"             = Query, filtro del a búsqueda, en este caso queremos todos y lo dejams en blanco
             // "(err, conteo)"  = Podemos recibir un posible error(err) o bien el total de registros obtenidos(conteo)
-            Usuario.countDocuments({}, (err, conteo)=>
+            Medico.countDocuments({}, (err, conteo)=>
             {
                 // ".json" = Covertimos la respuesta a un objeto JSON
                 return res.status(200).json({
                     ok: true,           // La petición se realizó correctamente
-                    usuarios: usuarios, // Regresamos un arreglo con la colección de Objetos de usuarios
-                    total:  conteo      // Total de registros que obtiene la consulta
+                    medicos: medicos,   // Regresamos un arreglo con la colección de Objetos de medicos
+                    total: conteo       // Total de registros obtenidos en la consulta
                 });
-            })            
-            
+            }) 
         })
 });
 
 
+
 // ===========================================
-// ++++ AGREGAR UN NUEVO USUARIO A LA BDD ++++
+// ++++ AGREGAR UN NUEVO MEDICO A LA BDD ++++
 // ===========================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "post"   = Tipo de petición que vamos a estar escuchando, en este caso es un POST
@@ -106,7 +104,7 @@ app.get('/', ( pet, res, next ) =>
 //            se ejecute esta función cotinue con la sig. instrucción, aunque por lo regular este parámetro se usa en los MIDDLEWARE)
 // Aquí recibimos la información que se envía mediante un HTTP POST o un POST
 app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
-{  
+{
     //Si nos llegan datos por POST o GET utilizamos "body"
     //Si nos llegan los datos por la URL utilizamos "params"
 
@@ -115,50 +113,42 @@ app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
 
     // Creamos una instancia (Objeto) de Usuario
     // Le envíamos los parámetros respectivos obtenidos del POST
-    var usuario = new Usuario({
+    var medico = new Medico({
         nombre:     params.nombre,
-        apellido:   params.apellido,
-        email:      params.email,
-        
-        // "bcrypt.hashSync" = Hacemos una encriptaci+on de una sola vía en el campo seleccionado
-        // "10" = Es el número de rounds
-        password:   bcrypt.hashSync(params.password,10),
-
         image:      params.image,
-        role:       params.role
+        usuario:    pet.usuario._id,
+        hospital:   params.hospital
     });
     
-    //Guardamos los valores del Nuevo Usuario en la BDD
+    //Guardamos los valores del Nuevo Medico en la BDD
     // ".save"                      = Método de mongoose
-    // "( err, usuarioGuardado )=>" = Se recibe un callback, es decir, una función que regresa cuandose graba el usuario en BDD
+    // "( err, medicoGuardado )=>"  = Se recibe un callback, es decir, una función que regresa cuandose graba el medico en BDD
     // "err"                        = Posible Error
-    // "usuarioGuardado"            = usuarioGuardado, es todo el objeto con todos los datos del nuevo usuario que ya se guardó en BDD
-    usuario.save( ( err, usuarioGuardado )=>
+    // "medicoGuardado"             = hospitalGuardado, es todo el objeto con todos los datos del nuevo medico que ya se guardó en BDD
+    medico.save( ( err, medicoGuardado )=>
     {
        //En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
        if(err)
        {
             return res.status(400).json({
-            ok: false,
-            mensaje: 'Error al Intentar Guardar al Nuevo Usuario',
-            errores: err 
+                ok: false,
+                mensaje: 'Error al Intentar Guardar al Nuevo Médico',
+                errores: err
             });
         }
 
         // Todo OK
         res.status(201).json({
-        ok: true,                   // La petición se realizó correctamente
-        usuario: usuarioGuardado,   // Regresamos el objeto del usuario que se acaba de guardar en BDD
-        usuarioToken: pet.usuario   // Obtenemos la información del Usuario que hizo la petición del Servicio, esto valor se genera en la funcion
-                                    // "verificaToken" del archivo "autenticacion.js"
+            ok: true,               // La petición se realizó correctamente
+            medico: medicoGuardado  // Regresamos el objeto del medico que se acaba de guardar en BDD            
         });
     });
-
 });
 
 
+
 // ===================================================
-// ++++ ACTUALIZAR EN BDD LOS DATOS DE UN USUARIO ++++
+// ++++ ACTUALIZAR EN BDD LOS DATOS DE UN MÉDICO ++++
 // ===================================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "put"    = Tipo de petición que vamos a estar escuchando, en este caso es un PUT
@@ -172,74 +162,72 @@ app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
     //Si nos llegan los datos por la URL utilizamos "params"
 
     //Recogemos el valor "id" del parámetro que nos llega por la URL
-    var IdUsuario   = pet.params.id;
+    var IdMedico   = pet.params.id;
 
     //Recogemos los datos que tenemos en el body (los valores nuevos) para modificar el usuario
     var NuevosDatos = pet.body;
 
-    // "Usuario"            = Hacemos uso del Esquema de usuario definido en el archivo "usuario.js" dentro de la crpeta "Modelos"
-    // ".findById"          = Instrucción de Mongoose, buscamos un documento por su Id
-    // "(err,usuario)=>"    = Función de callback con 2 parámetros de retorno: un posible error(err) o la respuesta, que en este caso es el objeto de un usuario(usuario) obtenido de la consulta a la BDD
-    Usuario.findById(IdUsuario,(err,usuario) =>
+    // "Medico"         = Hacemos uso del Esquema de medico definido en el archivo "medico.js" dentro de la carpeta "Modelos"
+    // ".findById"      = Instrucción de Mongoose, buscamos un documento por su Id
+    // "(err,medico)=>" = Función de callback con 2 parámetros de retorno: un posible error(err) o la respuesta, que en este caso es el objeto de un hospital(hospital) obtenido de la consulta a la BDD
+    Medico.findById(IdMedico,(err,medico) =>
     {
         // Tenemos un error
         if( err )
         {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al buscar al Usuario',
+                mensaje: 'Error al buscar al Médico',
                 errores: err
             });
         }
-        // El usuario no nos llega, el objeto está vacío
-        if( !usuario )
+        // El medico no nos llega, el objeto está vacío
+        if( !medico )
         {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El Usuario con el id ' + IdUsuario + ' no existe',
-                errores: { message: 'No existe un Usuario con ese Id'}
+                mensaje: 'El Medico con el id ' + IdMedico + ' no existe',
+                errores: { message: 'No existe un Médico con ese Id'}
             });
         }
 
-        // Todo OK, Se localizó el registro del Usuario, estamos listos para actualizar la DATA del Usuario
-        // Modificamos los datos del Usuario de acuerdo a los nuevos valores que nos llegan por el BODY
-        usuario.nombre      = NuevosDatos.nombre;
-        usuario.apellido    = NuevosDatos.apellido;
-        usuario.email       = NuevosDatos.email;
-        usuario.role        = NuevosDatos.role;
+        // Todo OK, Se localizó el registro del Médico, estamos listos para actualizar la DATA del Médico
+        // Modificamos los datos del Médico de acuerdo a los nuevos valores que nos llegan por el BODY
+        medico.nombre   = NuevosDatos.nombre;
+        medico.usuario  = pet.usuario._id;
+        medico.hospital = NuevosDatos.hospital;
 
-        // Guardamos el Registro del Usuario con los nuevos valores
-        // ".save"           = Método de mongoose
-        // "( err, usuarioGuardado )=>" = Se recibe un callback, es decir, una función que regresa cuandose graba el usuario en BDD
-        // "err"             = Posible Error
-        // "usuarioGuardado" = Usuario Guardado, es todo el objeto con todos los datos del nuevo usuario que ya se guardó en BDD
-        usuario.save(( err, usuarioGuardado )=>
+
+        // Guardamos el Registro del Médico con los nuevos valores
+        // ".save"                      = Método de mongoose
+        // "( err, medicoGuardado )=>"  = Se recibe un callback, es decir, una función que regresa cuandose graba el medico en BDD
+        // "err"                        = Posible Error
+        // "medicoGuardado"             = Médico Guardado, es todo el objeto con todos los datos del nuevo medico que ya se guardó en BDD
+        medico.save(( err, medicoGuardado )=>
         {
             // En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
             if(err)
             {
                 return res.status(400).json({
-                ok: false,
-                mensaje: 'Error al Intentar Actualizar los datos del Usuario',
-                errores: err
+                    ok: false,
+                    mensaje: 'Error al Intentar Actualizar los datos del Médico',
+                    errores: err
                 });
             }
-
-            // Por cuestiones de seguridad no mostramos el Password
-            usuarioGuardado.password = undefined;
-
+            
             // Todo OK
             res.status(200).json({
-                ok: true,                   // La petición se realizó correctamente
-                usuario: usuarioGuardado    // Regresamos el objeto del usuario que se acaba de guardar en BDD
+                ok: true,               // La petición se realizó correctamente
+                medico: medicoGuardado  // Regresamos el objeto del medico que se acaba de guardar en BDD
             });
         });
     });
 });
 
 
+
 // ======================================================
-// ++++ ELIMINAR DE LA BDD EL REGISTRO DE UN USUARIO ++++
+// ++++ ELIMINAR DE LA BDD EL REGISTRO DE UN MEDICO ++++
 // ======================================================
 // "app."   = Hacemos la referencia al EXPRESS
 // "delete" = Tipo de petición que vamos a estar escuchando, en este caso es un DELETE
@@ -253,20 +241,20 @@ app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
     //Si nos llegan los datos por la URL utilizamos "params"
 
     //Recogemos el valor "id" del parámetro que nos llega por la URL
-    var IdUsuario = pet.params.id;
+    var IdMedico = pet.params.id;
 
     // Hacemos referencia a nuestro Modelo de Usuario
     //".findByIdAndDelete"  = Buscamos un documento por su Id y lo eliminamos
-    //(err,usuarioBorrado)  = Función de callback con 2 parámetros de retorno: un posible error(err) o el objeto de un Usuario(usuarioBorrado) obtenido de la consulta a la BDD
-    Usuario.findByIdAndDelete(IdUsuario, ( err,usuarioBorrado )=>
+    //(err,medicoBorrado)   = Función de callback con 2 parámetros de retorno: un posible error(err) o el objeto de un Medico(medicoBorrado) obtenido de la consulta a la BDD
+    Medico.findByIdAndDelete(IdMedico, ( err,medicoBorrado )=>
     {
-        // No se localiza al Usuario con el id Especificado
-        if(!usuarioBorrado)
+        // No se localiza al Medico con el id Especificado
+        if(!medicoBorrado)
         {
             return res.status(400).json({
-            ok: false,   
-            mensaje: 'No existe un Usuario con el ID especificado',
-            errores: { message: 'No existe un Usuario con el ID especificado' }
+                ok: false,   
+                mensaje: 'No existe un Médico con el ID especificado',
+                errores: { message: 'No existe un Médico con el ID especificado' }
             });
         }
 
@@ -274,20 +262,19 @@ app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
          if(err)
          {
              return res.status(500).json({
-             ok: false,
-             mensaje: 'Error al Intentar Eliminar los datos del Usuario',
-             errores: err
+                ok: false,
+                mensaje: 'Error al Intentar Eliminar los datos del Médico',
+                errores: err
              });
          }
 
          // Todo OK
          res.status(200).json({
-            ok: true,                  // La petición se realizó correctamente
-            usuario: usuarioBorrado    // Regresamos el objeto del usuario que se acaba de Eliminar de la BDD
+            ok: true,              // La petición se realizó correctamente
+            medico: medicoBorrado  // Regresamos el objeto del medico que se acaba de Eliminar de la BDD
          });
     });
 });
-
 
 
 
