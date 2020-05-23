@@ -49,7 +49,7 @@ app.get('/', ( pet, res, next ) =>
     // Si en el query de la petición no viene especificado desde que registro queremos el listado (porque es un parámetro opcional) entonces ponemos "0" para
     // que en ese caso nos comience a mostrar en pantalla a partir del primer registro
     var desde = pet.query.desde || 0;
-    desde = Number(desde);  //Nos aseguramos de que sea un valor numérico
+    desde = Number( desde );  //Nos aseguramos de que sea un valor numérico
 
 
     // ---- Hacemos uso de Mongoose ----
@@ -60,17 +60,17 @@ app.get('/', ( pet, res, next ) =>
     // "limit(n)"           = Se muestran en la página como máximo "n" elementos
     // ".exec("             = Executamos la consulta
     // "(err, usuarios)=>"  = Es el resultado de la búsqueda, es un callback que recibe 2 parámetros: un posible error(err) o la colección de usuarios(usuarios)
-    Usuario.find({}, '-password')
-        .skip(desde)
-        .limit(5)
+    Usuario.find( {} , '-password')
+        .skip( desde )
+        .limit( 5 )
         .exec(
-            (err, usuarios)=>
+            ( err , usuarios ) =>
             {
             // Ocurrió un error
             if ( err )
             {
                 // ".json" = Covertimos la respuesta a un objeto JSON
-                return res.status(500).json({
+                return res.status( 500 ).json({
                     ok: false,      // La petición NO se realizó
                     mensaje: 'Error al cargar los Usuarios',  // Mensaje que queremos mostrar
                     errors: err     // Descripción del error
@@ -82,10 +82,10 @@ app.get('/', ( pet, res, next ) =>
             // "Medico.countDocuments" = Método de Mongoose para obtener el total de socumentos de una colección, en ese caso de la colección "usuarios"
             // "{}"             = Query, filtro del a búsqueda, en este caso queremos todos yl o dejams en blanco
             // "(err, conteo)"  = Podemos recibir un posible error(err) o bien el total de registros obtenidos(conteo)
-            Usuario.countDocuments({}, (err, conteo)=>
+            Usuario.countDocuments( {} , ( err , conteo ) =>
             {
                 // ".json" = Covertimos la respuesta a un objeto JSON
-                return res.status(200).json({
+                return res.status( 200 ).json({
                     ok: true,           // La petición se realizó correctamente
                     usuarios: usuarios, // Regresamos un arreglo con la colección de Objetos de usuarios
                     total:  conteo      // Total de registros que obtiene la consulta
@@ -105,14 +105,14 @@ app.get('/', ( pet, res, next ) =>
 // "(pet, res, next ) =>" = Es una funcion de callback que recibe 3 parámetros: petición(pet), respuesta(res) y next(le dice a EXPRESS que cuando
 //            se ejecute esta función cotinue con la sig. instrucción, aunque por lo regular este parámetro se usa en los MIDDLEWARE)
 // Aquí recibimos la información que se envía mediante un HTTP POST o un POST
-app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
+app.post('/', ( pet , res , next ) =>
 {  
     //Si nos llegan datos por POST o GET utilizamos "body"
     //Si nos llegan los datos por la URL utilizamos "params"
-
+    
     // Recoger los parámetros que nos llegan por la petición (por el body), que nos llegan por POST
     var params  = pet.body;
-
+    
     // Creamos una instancia (Objeto) de Usuario
     // Le envíamos los parámetros respectivos obtenidos del POST
     var usuario = new Usuario({
@@ -122,7 +122,7 @@ app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
         
         // "bcrypt.hashSync" = Hacemos una encriptaci+on de una sola vía en el campo seleccionado
         // "10" = Es el número de rounds
-        password:   bcrypt.hashSync(params.password,10),
+        password:   bcrypt.hashSync( params.password , 10 ),
 
         image:      params.image,
         role:       params.role
@@ -133,12 +133,12 @@ app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
     // "( err, usuarioGuardado )=>" = Se recibe un callback, es decir, una función que regresa cuandose graba el usuario en BDD
     // "err"                        = Posible Error
     // "usuarioGuardado"            = usuarioGuardado, es todo el objeto con todos los datos del nuevo usuario que ya se guardó en BDD
-    usuario.save( ( err, usuarioGuardado )=>
+    usuario.save( ( err , usuarioGuardado )=>
     {
        //En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
-       if(err)
+       if( err )
        {
-            return res.status(400).json({
+            return res.status( 400 ).json({
             ok: false,
             mensaje: 'Error al Intentar Guardar al Nuevo Usuario',
             errores: err 
@@ -146,7 +146,7 @@ app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
         }
 
         // Todo OK
-        res.status(201).json({
+        res.status( 201 ).json({
         ok: true,                   // La petición se realizó correctamente
         usuario: usuarioGuardado,   // Regresamos el objeto del usuario que se acaba de guardar en BDD
         usuarioToken: pet.usuario   // Obtenemos la información del Usuario que hizo la petición del Servicio, esto valor se genera en la funcion
@@ -166,7 +166,7 @@ app.post('/', mdAutenticacion.verificaToken,  ( pet, res, next ) =>
 // "(pet, res, next ) =>" = Es una funcion de callback que recibe 3 parámetros: petición(pet), respuesta(res) y next(le dice a EXPRESS que cuando
 //            se ejecute esta función cotinue con la sig. instrucción, aunque por lo regular este parámetro se usa en los MIDDLEWARE)
 // Aquí recibimos la información que se envía mediante un HTTP POST o un POST
-app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
+app.put('/:id' , mdAutenticacion.verificaToken , ( pet, res, next ) =>
 {
     //Si nos llegan datos por POST o GET utilizamos "body"
     //Si nos llegan los datos por la URL utilizamos "params"
@@ -180,12 +180,12 @@ app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
     // "Usuario"            = Hacemos uso del Esquema de usuario definido en el archivo "usuario.js" dentro de la crpeta "Modelos"
     // ".findById"          = Instrucción de Mongoose, buscamos un documento por su Id
     // "(err,usuario)=>"    = Función de callback con 2 parámetros de retorno: un posible error(err) o la respuesta, que en este caso es el objeto de un usuario(usuario) obtenido de la consulta a la BDD
-    Usuario.findById(IdUsuario,(err,usuario) =>
+    Usuario.findById( IdUsuario , ( err , usuario ) =>
     {
         // Tenemos un error
         if( err )
         {
-            return res.status(500).json({
+            return res.status( 500 ).json({
                 ok: false,
                 mensaje: 'Error al buscar al Usuario',
                 errores: err
@@ -194,7 +194,7 @@ app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
         // El usuario no nos llega, el objeto está vacío
         if( !usuario )
         {
-            return res.status(400).json({
+            return res.status( 400 ).json({
                 ok: false,
                 mensaje: 'El Usuario con el id ' + IdUsuario + ' no existe',
                 errores: { message: 'No existe un Usuario con ese Id'}
@@ -216,9 +216,9 @@ app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
         usuario.save(( err, usuarioGuardado )=>
         {
             // En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
-            if(err)
+            if( err )
             {
-                return res.status(400).json({
+                return res.status( 400 ).json({
                 ok: false,
                 mensaje: 'Error al Intentar Actualizar los datos del Usuario',
                 errores: err
@@ -229,7 +229,7 @@ app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
             usuarioGuardado.password = undefined;
 
             // Todo OK
-            res.status(200).json({
+            res.status( 200 ).json({
                 ok: true,                   // La petición se realizó correctamente
                 usuario: usuarioGuardado    // Regresamos el objeto del usuario que se acaba de guardar en BDD
             });
@@ -247,7 +247,7 @@ app.put('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
 // "(pet, res, next ) =>" = Es una funcion de callback que recibe 3 parámetros: petición(pet), respuesta(res) y next(le dice a EXPRESS que cuando
 //            se ejecute esta función cotinue con la sig. instrucción, aunque por lo regular este parámetro se usa en los MIDDLEWARE)
 // Aquí recibimos la información que se envía mediante un HTTP POST o un POST
-app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
+app.delete('/:id' , mdAutenticacion.verificaToken ,  ( pet, res, next ) =>
 {
     //Si nos llegan datos por POST o GET utilizamos "body"
     //Si nos llegan los datos por la URL utilizamos "params"
@@ -258,12 +258,12 @@ app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
     // Hacemos referencia a nuestro Modelo de Usuario
     //".findByIdAndDelete"  = Buscamos un documento por su Id y lo eliminamos
     //(err,usuarioBorrado)  = Función de callback con 2 parámetros de retorno: un posible error(err) o el objeto de un Usuario(usuarioBorrado) obtenido de la consulta a la BDD
-    Usuario.findByIdAndDelete(IdUsuario, ( err,usuarioBorrado )=>
+    Usuario.findByIdAndDelete( IdUsuario , ( err,usuarioBorrado )=>
     {
         // No se localiza al Usuario con el id Especificado
-        if(!usuarioBorrado)
+        if( !usuarioBorrado )
         {
-            return res.status(400).json({
+            return res.status( 400 ).json({
             ok: false,   
             mensaje: 'No existe un Usuario con el ID especificado',
             errores: { message: 'No existe un Usuario con el ID especificado' }
@@ -271,9 +271,9 @@ app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
         }
 
         // En caso de ocurrir un error salimos del proceso con "return" y enviamos el mensaje
-         if(err)
+         if( err )
          {
-             return res.status(500).json({
+             return res.status( 500 ).json({
              ok: false,
              mensaje: 'Error al Intentar Eliminar los datos del Usuario',
              errores: err
@@ -281,7 +281,7 @@ app.delete('/:id',mdAutenticacion.verificaToken,  ( pet, res, next ) =>
          }
 
          // Todo OK
-         res.status(200).json({
+         res.status( 200 ).json({
             ok: true,                  // La petición se realizó correctamente
             usuario: usuarioBorrado    // Regresamos el objeto del usuario que se acaba de Eliminar de la BDD
          });

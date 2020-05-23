@@ -31,25 +31,32 @@ var bodyParser = require('body-parser');
 var app = express();
 
 
+// -- CONFIGURAR CABECERAS Y CORS -- (Para cualquier proyecto aplican las siguientes instrucciones, son las mismas)
+// Creamos el Middleware para el CORS, es el acceso cruzado entre dominios, se configuran una serie de
+// cabeceras para permitir peticiones AJAX de un dominio a otro, desde nuestro cliente hasta nuestra API
+// Así nos evitamos problemas a la hora de hacer peticiones AJAX desde JavaScript, un FrontEnd, Etc.
+app.use( ( req , res , next ) =>
+{
+    res.header('Access-Control-Allow-Origin','*');                              //Indica que cualquiera pueda acceder a estr origen
+    res.header('Access-Control-Allow-Headers' , 'Authorization, X-API-KEY, Origin, X-Requested-With,Content-Type, Accept,Access-Control-Allow-Request-Method');
+    res.header('Access-Control-Allow-Methods' , 'GET,POST,OPTIONS,PUT,DELETE'); //Métodos HTTP Permitidos
+    res.header('Allow' , 'GET,POST,OPTIONS,PUT,DELETE');                        //En la regla "allow" se pasan nuevamente los métodos anteriores
+
+    next();
+});
+
+
 
 // ++++ CARGAR RUTAS ++++
 // Cargamos el módulo de configuración de rutas que creamos en la carpeta de "rutas" en el archivo "app.js"
-// Esta es la ruta principal
-var rutaPrincipal = require('./Rutas/app');
-// Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "usuario.js"
-var usuario_Rutas = require('./Rutas/usuario');
-// Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "hospital.js"
-var hospital_Rutas = require('./Rutas/hospital');
-// Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "medico.js"
-var medico_Rutas = require('./Rutas/medico');
-// Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "busqueda.js"
-var busqueda_Rutas = require('./Rutas/busqueda');
-// Cargamos el módulo de configuración de login que creamos en la carpeta de "Rutas" en el archivo "login.js"
-var login_Rutas = require('./Rutas/login');
-// Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "upload.js"
-var upload_Rutas = require('./Rutas/upload');
-// Cargamos el módulo de configuración de Imagenes que creamos en la carpeta de "Rutas" en el archivo "imagenes.js"
-var imagenes_Rutas = require('./Rutas/imagenes');
+var rutaPrincipal   = require('./Rutas/app');       // Esta es la ruta principal
+var usuario_Rutas   = require('./Rutas/usuario');   // Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "usuario.js"
+var hospital_Rutas  = require('./Rutas/hospital');  // Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "hospital.js"
+var medico_Rutas    = require('./Rutas/medico');    // Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "medico.js"
+var busqueda_Rutas  = require('./Rutas/busqueda');  // Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "busqueda.js"
+var login_Rutas     = require('./Rutas/login');     // Cargamos el módulo de configuración de login que creamos en la carpeta de "Rutas" en el archivo "login.js"
+var upload_Rutas    = require('./Rutas/upload');    // Cargamos el módulo de configuración de rutas que creamos en la carpeta de "Rutas" en el archivo "upload.js"
+var imagenes_Rutas  = require('./Rutas/imagenes');  // Cargamos el módulo de configuración de Imagenes que creamos en la carpeta de "Rutas" en el archivo "imagenes.js"
 
 
 
@@ -58,23 +65,9 @@ var imagenes_Rutas = require('./Rutas/imagenes');
 // Son funciones, métodos que se ejecutan en primer lugar cuando se ejecutan peticiones HTTP, antes de que llegue a un controlador) --
 // Si hay algo en el BODY que nosotros estémos enviando el BODY-PARSER lo va a tomar y nos va a crear el objeto de JavaScript para que
 // lo podamos utilizar en cualquier lugar
-app.use(bodyParser.urlencoded({extended:false}))    //Creamos el middleware
-app.use(bodyParser.json());                         //Lo que traiga el body lo convertimos a JSON para poder usarlo dentro de nuestro código
+app.use( bodyParser.urlencoded( { extended:false } ) )  //Creamos el middleware
+app.use( bodyParser.json() );                           //Lo que traiga el body lo convertimos a JSON para poder usarlo dentro de nuestro código
 
-
-//-- CONFIGURAR CABECERAS Y CORS -- (Para cualquier proyecto aplican las siguientes instrucciones, son las mismas)
-//Creamos el Middleware para el CORS, es el acceso cruzado entre dominios, se configuran una serie de
-//cabeceras para permitir peticiones AJAX de un dominio a otro, desde nuestro cliente hasta nuestra API
-//Así nos evitamos problemas a la hora de hacer peticiones AJAX desde JavaScript, un FrontEnd, Etc.
-app.use((req,res,next) =>
-{
-    res.header('Access-Control-Allow-Origin','*');                              //Indica que cualquiera pueda acceder a estr origen
-    res.header('Access-Control-Allow-Headers','Authorization, X-API-KEY, Origin, X-Requested-With,Content-Type, Accept,Access-Control-Allow-Request-Method');
-    res.header('Access-Control-Allow-Methods','GET,POST,OPTIONS,PUT,DELETE');   //Métodos HTTP Permitidos
-    res.header('Allow','GET,POST,OPTIONS,PUT,DELETE');                          //En la regla "allow" se pasan nuevamente los métodos anteriores
-
-    next();
-});
 
 
 // -- SERVER INDEX CONFIG  (Esto se comenta ya que se considera que su uso vulneral a segurodad de la aplicación)
@@ -90,19 +83,19 @@ app.use((req,res,next) =>
 //              El middleware es algo que se ejecuta antes de que se resuelvan otras rutas
 
 // "usuario_Rutas"  = Ruta para los "Usuarios"
-app.use('/usuario',usuario_Rutas);
+app.use('/usuario' , usuario_Rutas );
 // "hospital_Rutas" = Ruta para los "Hospitales"
-app.use('/hospital',hospital_Rutas);
+app.use('/hospital' , hospital_Rutas );
 // "medico_Rutas"   = Ruta para los "Medicos"
-app.use('/medico',medico_Rutas);
+app.use('/medico' , medico_Rutas );
 // "busqueda_Rutas"  = Ruta para los la búsqueda General
-app.use('/busqueda',busqueda_Rutas);
+app.use('/busqueda' , busqueda_Rutas );
 // "login_Rutas"    = Ruta para el "Login"
-app.use('/login',login_Rutas);
+app.use('/login' , login_Rutas );
 // "upload_Rutas"   = Ruta para el "upload"
-app.use('/upload',upload_Rutas);
+app.use('/upload' , upload_Rutas );
 // "imagenes_Rutas"   = Ruta para las "imagenes"
-app.use('/img',imagenes_Rutas);
+app.use('/img' , imagenes_Rutas );
 
 // ¡¡¡ OJO!!!.- Esta línea de código debe de ir al final, si la ponemos antes de otras rutas entonces siempre se estará llamando a esta ruta y no entrarán las que estén debajo de ella
 // "/"              = Es la ruta principal
@@ -115,9 +108,9 @@ app.use('/',rutaPrincipal);
 // -- ESCUCHAR PETICIONES
 // Esto se logra a trravez del puerto 3000 (si ese puerto ya está ocupado se puede usar el 3001,8080 o cualquier otro) y a parte ponemos un mensaje para saber si el Servidor
 // se logró levantar o si sucedió un error 8eso lo hacemos con una función de flecha
-app.listen(3000, ()=>
+app.listen( 3000 , ()=>
 {
-    console.log('Express Server Puerto 3000:', 'online'.bgGreen);
+    console.log('Express Server Puerto 3000:' , 'online'.bgGreen );
 });
 
 
@@ -128,18 +121,18 @@ app.listen(3000, ()=>
 // "//hospitalDB"           = Es nuestra Base de Datos, la creamos en Robo 3T, si la BDD no existe entonces se crea
 // "{useNewUrlParser:true}" = Es una nueva versión del analizador de cadenas, aún no es obligatorio pero ya lo podemos usar y nos evitamos un mensaje de advertencia
 //                            que aparece en la ventana del CMD cuando hace la conexión a la BDD
-mongoose.connect('mongodb://localhost:27017/hospitalDB', {useNewUrlParser: true })
+mongoose.connect('mongodb://localhost:27017/hospitalDB' , { useNewUrlParser: true })
     // Todo OK, Node logró la conexión con la BDD de MONGO
     .then( () =>
     {
-        console.log('Base de Datos:', 'online'.bgMagenta);
+        console.log('Base de Datos:' , 'online'.bgMagenta);
     })
     
     // Sucedió un error, "throw" detiene todo el proceso, detenemos la aplicación por completo
     .catch( () =>
     {
-        console.error(err);
+        console.error( err );
     });
 
 // Con la siguiente instrucción eliminamos el warning que aparece en la consola: DeprecationWarning: collection.ensureIndex is deprecated. Use ctrateIndexes instead"
-mongoose.set('useCreateIndex', true);
+mongoose.set('useCreateIndex' , true);

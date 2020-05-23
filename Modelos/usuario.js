@@ -29,7 +29,7 @@ var EsquemaUsuario = new Esquema({
     // "unique:true"                = Indicamos que el valor del campo es único, no se puede repetir
     // "default: 'USER_ROLE'"       = Valor por default del campo
     nombre:             { type: String , required: [ true , 'El nombre es Necesario' ] },
-    apellido:           { type: String , required: [ true , 'El Apellido es Necesario' ] },
+    // apellido:           { type: String , required: [ true , 'El Apellido es Necesario' ] },
     email:              { type: String , unique: true , required: [ true , 'El Correo es Necesario' ] },
     password:           { type: String , required: [ true , 'La Contraseña es Necesaria' ] },
     img:                { type: String , required: false },
